@@ -1,0 +1,8 @@
+.git/
+.avoscloud/
+.leancloud/
+node_modules/
+build/
+client/
+config/
+doc/

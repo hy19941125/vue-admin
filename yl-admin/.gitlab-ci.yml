@@ -1,0 +1,55 @@
+image: node:latest
+
+stages:
+  - lint
+  - build
+  - deploy
+
+before_script:
+  - npm install
+
+cache:
+  paths:
+  - dist/
+  - node_modules/
+
+lint:
+  stage: lint
+  script:
+    - ./node_modules/.bin/eslint --ext .js --ext .vue *.js client/ routes/
+
+build:
+  stage: build
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    paths:
+      - dist/
+      - node_modules/
+  script:
+    - npm run build
+
+deploy_staging:
+  stage: deploy
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    paths:
+      - dist/
+      - node_modules/
+  script:
+    - echo "Deploying to staging server..."
+    - "[ -d ../deploy ] && rm -rf ../deploy"
+    - "[ -d ../deploy ] || mkdir ../deploy"
+    - cp -R server.js server-cluster.js package.json package-lock.json cloud.js app.js views routes dist ../deploy
+    - cd ../deploy
+    - git config --global user.email "noodles@we.im"
+    - git config --global user.name "Xiong Tengyan"
+    - git init
+    - git add *
+    - git commit -m PIPELINE_ID_$CI_PIPELINE_ID
+    - git remote add origin http://$gitlab_user:$gitlab_pwd@gitlab.weimtek.cn/weimtek/yl-admin-release.git
+    - git push -f origin master
+  environment:
+    name: stg-yl-admin.leanapp.cn
+    url: https://stg-yl-admin.leanapp.cn
+  only:
+  - master
